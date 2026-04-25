@@ -1,0 +1,18 @@
+# prometheus-values.yaml
+# Use this with Helm: helm install prometheus prometheus-community/prometheus -f prometheus-values.yaml
+server:
+  global:
+    scrape_interval: 10s
+    evaluation_interval: 10s
+
+alertmanager:
+  enabled: false
+
+pushgateway:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true

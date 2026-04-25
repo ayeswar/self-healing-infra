@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: self-healer
+  labels:
+    app: self-healer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: self-healer
+  template:
+    metadata:
+      labels:
+        app: self-healer
+    spec:
+      serviceAccountName: self-healer-sa
+      containers:
+      - name: self-healer
+        image: self-healer:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+        env:
+        - name: NAMESPACE
+          value: "default"
+        - name: TARGET_DEPLOYMENT
+          value: "self-healing-app"

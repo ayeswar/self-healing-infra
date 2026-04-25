@@ -1,0 +1,53 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies and Lint
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        # Linting can go here
+        # flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build App Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./app
+        push: false
+        tags: self-healing-app:latest
+
+    - name: Build ML Detector Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./ml_anomaly_detector
+        push: false
+        tags: ml-anomaly-detector:latest
+
+    - name: Build Healer Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        context: ./self_healer
+        push: false
+        tags: self-healer:latest
+
+    # Note: In a real environment, you'd add steps here to push to Docker Hub/ECR 
+    # and then deploy to a Kubernetes cluster using kubeconfig.

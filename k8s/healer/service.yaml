@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: self-healer-svc
+  labels:
+    app: self-healer
+spec:
+  selector:
+    app: self-healer
+  ports:
+  - port: 5000
+    targetPort: 5000

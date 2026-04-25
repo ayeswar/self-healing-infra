@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-anomaly-detector
+  labels:
+    app: ml-anomaly-detector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-anomaly-detector
+  template:
+    metadata:
+      labels:
+        app: ml-anomaly-detector
+    spec:
+      containers:
+      - name: ml-anomaly-detector
+        image: ml-anomaly-detector:latest
+        imagePullPolicy: Never
+        env:
+        - name: PROMETHEUS_URL
+          value: "http://prometheus-server.default.svc.cluster.local:80"
+        - name: HEALER_URL
+          value: "http://self-healer-svc.default.svc.cluster.local:5000"
+        - name: POLL_INTERVAL
+          value: "15"

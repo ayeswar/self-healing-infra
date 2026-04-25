@@ -1,0 +1,5 @@
+minikube.exe
+helm.exe
+__pycache__/
+*.pyc
+.env
