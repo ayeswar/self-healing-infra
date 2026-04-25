@@ -1,12 +1,17 @@
-# AI-Powered Self-Healing Infrastructure
+# 🚀 AI-Powered Self-Healing Infrastructure
 
 This project demonstrates a fully open-source, production-grade **Self-Healing Infrastructure** using Kubernetes, Prometheus, Machine Learning (Isolation Forest), and Python automation.
 
-## Features
+**Live Interactive Demo:** Deploy the frontend instantly to [Streamlit Community Cloud](https://share.streamlit.io/deploy?repository=ayeswar/self-healing-infra&branch=main&mainModule=frontend/streamlit_app.py) for free!
+
+---
+
+## 🌟 Features
 - **Application Monitoring**: Real-time metrics scraped via Prometheus.
-- **Anomaly Detection**: An ML model continuously queries Prometheus for CPU/Memory metrics. It uses an Isolation Forest algorithm to detect anomalous usage (e.g., sudden spikes, memory leaks).
-- **Self-Healing**: When an anomaly is detected, a Python automation bot securely interacts with the Kubernetes API to restart struggling pods or scale up deployments to handle the load.
-- **CI/CD**: Fully automated GitHub Actions pipeline for testing and building Docker images.
+- **Machine Learning Anomaly Detection**: An ML model continuously queries Prometheus for CPU/Memory metrics. It uses an `Isolation Forest` algorithm (via scikit-learn) to detect anomalous usage (e.g., sudden spikes, memory leaks).
+- **Automated Self-Healing**: When an anomaly is detected, a Python automation bot securely interacts with the Kubernetes API to patch, scale, or restart struggling pods to handle the load automatically.
+- **Interactive Dashboard**: A Streamlit frontend UI that simulates and visualizes the ML model, CPU traffic, and Kubernetes scaling.
+- **CI/CD Pipeline**: Fully automated GitHub Actions workflow for testing and building Docker images.
 
 ---
 
@@ -14,108 +19,90 @@ This project demonstrates a fully open-source, production-grade **Self-Healing I
 
 ```mermaid
 flowchart TD
-    AppPod[Application Pods] -->|Metrics| Prom[Prometheus]
+    AppPod[Target Application Pods] -->|Metrics| Prom[Prometheus]
     Prom -->|Scrape| MLApp[ML Anomaly Detector]
     MLApp -->|Trigger Webhook| Healer[Self-Healing Automator]
     Healer -->|Patch/Scale| K8sAPI[Kubernetes API]
     K8sAPI --> AppPod
+    
+    User((User/Traffic)) --> AppPod
+    User --> Streamlit[Streamlit Dashboard]
 ```
 
 ---
 
-## 🚀 Quick Start (Local Minikube Deployment)
+## ☁️ Free Cloud Deployment (Streamlit Dashboard)
 
-Since this project avoids paid services, we will deploy it locally using **Minikube**.
+You can easily deploy the frontend UI to the public internet for **free** to showcase the project to others:
+
+1. Click here: **[Deploy to Streamlit](https://share.streamlit.io/deploy?repository=ayeswar/self-healing-infra&branch=main&mainModule=frontend/streamlit_app.py)**
+2. Log in with your GitHub account.
+3. Click the **Deploy** button.
+4. Your dashboard will be live in 2 minutes and you can click the "Simulate CPU Spike" button to watch the AI scale the infrastructure!
+
+---
+
+## 🚀 Quick Start (Local Kubernetes Deployment)
+
+To run the complete infrastructure (the actual Kubernetes backend) locally, we use **Minikube**.
 
 ### Prerequisites
-- Docker
-- Minikube
+- Docker & Minikube
 - `kubectl`
 - Helm (for installing Prometheus)
 
-### Step 1: Start Minikube
+### Step 1: Start Minikube & Build Images
 ```bash
 minikube start --memory=4096 --cpus=4
+eval $(minikube docker-env) # Point shell to minikube's docker-daemon
+
+# Build images
+docker build -t self-healing-app:latest ./app
+docker build -t ml-anomaly-detector:latest ./ml_anomaly_detector
+docker build -t self-healer:latest ./self_healer
 ```
 
-### Step 2: Build Docker Images directly into Minikube
-We want Minikube to use our locally built images instead of pulling from Docker Hub.
-
-```bash
-# Point your shell to minikube's docker-daemon
-eval $(minikube docker-env)
-
-# Build App
-cd app
-docker build -t self-healing-app:latest .
-cd ..
-
-# Build ML Detector
-cd ml_anomaly_detector
-docker build -t ml-anomaly-detector:latest .
-cd ..
-
-# Build Healer Bot
-cd self_healer
-docker build -t self-healer:latest .
-cd ..
-```
-
-### Step 3: Install Prometheus
-We use Helm to deploy Prometheus into the cluster quickly.
-
+### Step 2: Install Prometheus & Deploy Infrastructure
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
 helm install prometheus prometheus-community/prometheus -f k8s/monitoring/prometheus-values.yaml
+
+# Deploy App, Healer Bot (with RBAC), and ML Detector
+kubectl apply -f k8s/app/
+kubectl apply -f k8s/healer/
+kubectl apply -f k8s/ml_detector/
 ```
 
-### Step 4: Deploy the System
-Now deploy the App, the Healer bot (with its RBAC permissions), and the ML Detector.
+### Step 3: Test the Self-Healing Live!
 
-```bash
-# Deploy Target App
-kubectl apply -f k8s/app/deployment.yaml
-kubectl apply -f k8s/app/service.yaml
-
-# Deploy Self-Healer Bot
-kubectl apply -f k8s/healer/rbac.yaml
-kubectl apply -f k8s/healer/deployment.yaml
-kubectl apply -f k8s/healer/service.yaml
-
-# Deploy ML Anomaly Detector
-kubectl apply -f k8s/ml_detector/deployment.yaml
+You can run our automated PowerShell script to watch the magic happen:
+```powershell
+powershell -ExecutionPolicy Bypass -File demo.ps1
 ```
 
-### Step 5: Test the Self-Healing
-
-1. Port-forward the application so you can hit its endpoints:
+**Or do it manually:**
+1. Trigger a simulated **CPU Spike**:
    ```bash
-   kubectl port-forward svc/self-healing-app-svc 8000:8000
+   curl "http://localhost:30080/stress-cpu?duration=30"
    ```
-
-2. Trigger a simulated **CPU Spike**:
+2. Watch the ML detector catch it and trigger the healer:
    ```bash
-   curl "http://localhost:8000/stress-cpu?duration=30"
+   kubectl logs -l app=ml-anomaly-detector --tail=10
+   kubectl logs -l app=self-healer --tail=10
    ```
-
-3. Watch the magic happen:
-   - Prometheus will detect the CPU spike.
-   - `ml-anomaly-detector` will poll Prometheus, see the anomaly, and send an alert to `self-healer`.
-   - `self-healer` will automatically scale up the `self-healing-app` deployment to handle the load.
-   
-   Verify by running:
+3. Watch Kubernetes automatically spin up new pods to handle the load:
    ```bash
-   kubectl get pods -w
+   kubectl get pods -l app=self-healing-app -w
    ```
-   *You should see new pods spinning up automatically!*
 
 ---
 
-## 🗂️ Folder Structure
+## 🗂️ Repository Structure
 
 - `app/`: Target FastAPI app that exposes endpoints to simulate CPU/Memory stress.
 - `k8s/`: Kubernetes YAML manifests for the App, Healer bot, and Prometheus.
 - `ml_anomaly_detector/`: Python scikit-learn service that polls metrics and predicts anomalies.
 - `self_healer/`: Python Flask service that acts as a webhook receiver and Kubernetes API client.
+- `frontend/`: Streamlit dashboard for real-time visualization.
+- `demo.ps1`: Automated script to run the local Kubernetes demonstration.
 - `.github/workflows/`: CI/CD configuration.
